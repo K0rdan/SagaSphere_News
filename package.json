@@ -1,0 +1,34 @@
+{
+  "name": "sagasphere_news",
+  "version": "1.0.0",
+  "description": "Sagasphere news container",
+  "main": "./src/index.js",
+  "scripts": {
+    "dev": "nodemon",
+    "build": "rollup -c",
+    "start": "node dist/bundle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/K0rdan/SagaSphere_Backend.git"
+  },
+  "author": "Kordan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/K0rdan/SagaSphere_Backend/issues"
+  },
+  "homepage": "https://github.com/K0rdan/SagaSphere_Backend#readme",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "node-fetch": "^1.7.0",
+    "rollup": "^0.41.6",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-node-globals": "^1.1.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "xml2js": "^0.4.17"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0",
+    "rollup-plugin-node-resolve": "^3.0.0"
+  }
+}
