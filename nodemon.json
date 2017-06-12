@@ -9,7 +9,7 @@
 
   "verbose": true,
   "execMap": {
-    "js": "npm run build && npm start"
+    "js": "npm run build && npm run start"
   },
   "events": {
   },
