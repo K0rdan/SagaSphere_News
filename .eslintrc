@@ -8,6 +8,7 @@
     "brace-style": ["error", "stroustrup"],
     "comma-dangle": ["error", "never"],
     "indent": "off",
+    "max-len": "off",
     "no-plusplus": "off",
     "quotes": ["error", "double"],
     "spaced-comment": "off"
