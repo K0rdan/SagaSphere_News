@@ -27,6 +27,26 @@ function rssFieldToString(sagaId, rssField) {
     return parsedRssField;
 }
 
+function parseDate(sagaId, date) {
+    if (process.env.DEBUG === "true") {
+        Log.info(logTags, "Running 'parseDate'...");
+    }
+
+    let parsedDate = typeof (date) !== "undefined" ? date : "";
+
+    // Specific parsing
+    switch (sagaId) {
+        case 1: // Donjon de Naheulbeuk
+            parsedDate = parsedDate.substring(parsedDate.length - 1, 1);
+            break;
+        case 2: // Reflet d'Acide
+            break;
+        default:
+    }
+
+    return parsedDate;
+}
+
 function parseDesc(sagaId, desc) {
     if (process.env.DEBUG === "true") {
         Log.info(logTags, "Running 'parseDesc'...");
@@ -62,10 +82,10 @@ function parseNews(saga, news) {
             newsParsed.saga = saga.id;
             newsParsed.link = rssFieldToString(saga.id, news.link) !== "" ? rssFieldToString(saga.id, news.link) : saga.url;
             newsParsed.title = rssFieldToString(saga.id, news.title);
-            newsParsed.date = rssFieldToString(saga.id, news.pubDate);
+            newsParsed.date = parseDate(saga.id, rssFieldToString(saga.id, news.pubDate));
             newsParsed.description = parseDesc(saga.id, rssFieldToString(saga.id, news.description));
 
-            resolve({ news: newsParsed });
+            resolve(newsParsed);
         }
         else {
             reject({ err: `Can't save the news for the saga "${saga.title}", missing title or publication date` });
@@ -93,7 +113,7 @@ function parseFeed(saga, xmlString) {
                 }
 
                 Promise.all(promises)
-                    .then(resolve({ newsParsed: promises.length }))
+                    .then(newsParsed => resolve(newsParsed))
                     .catch(parseErr => reject({ err: `Error when parsing one news from "${saga.title}", ${parseErr}` }));
             }
         });

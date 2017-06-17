@@ -25,13 +25,14 @@
   },
   "pre-commit": "lint:staged",
   "dependencies": {
+    "crypto-js": "^3.1.9-1",
+    "jsdom": "^11.0.0",
     "mysql": "^2.13.0",
     "node-fetch": "^1.7.1",
     "node-schedule": "^1.2.3",
     "rollup": "^0.41.6",
     "rollup-plugin-babel": "^2.7.1",
     "sagasphere_logger": "^1.1.0",
-    "jsdom": "^11.0.0",
     "xml2js": "^0.4.17"
   },
   "devDependencies": {

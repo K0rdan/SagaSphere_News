@@ -2,6 +2,7 @@
 // Lib imports
 import mysql from "mysql";
 import fetch from "node-fetch";
+import CryptoJS, { SHA256 } from "crypto-js";
 // import schedule from 'node-schedule';
 import Log from "sagasphere_logger";
 //////////
@@ -61,10 +62,10 @@ function getNewsURL() {
     });
 }
 
-function getNews(res) {
+function fetchNews(res) {
     return new Promise((resolve, reject) => {
         if (process.env.DEBUG === "true") {
-            Log.info(logTags, "Running 'getNews'...");
+            Log.info(logTags, "Running 'fetchNews'...");
         }
         if (res && typeof (res) === "object" && res.length !== 0) {
             const fetches = [];
@@ -84,23 +85,16 @@ function getNews(res) {
     });
 }
 
-function postNews() {
-    return new Promise((resolve) => {
-        resolve();
-    });
-}
-
-//////////
-// Entry point
-initMySQL()
-    .then(getNewsURL)
-    .then(getNews)
-    .then(getNewsRes => new Promise((resolve, reject) => {
+function parseNews(getNewsRes) {
+    return new Promise((resolve, reject) => {
+        if (process.env.DEBUG === "true") {
+            Log.info(logTags, "Running 'parseNews'...");
+        }
         const parses = [];
         for (let i = 0; i < getNewsRes.length; i++) {
             parses.push(XMLParser.parse(getNewsRes[i].saga, getNewsRes[i].xmlData)
                 .then((parseRes) => {
-                    Log.info(logTags, `${parseRes.newsParsed} news has successfully been parsed for the saga '${getNewsRes[i].saga.title}'.`);
+                    Log.info(logTags, `${parseRes.length} news has successfully been parsed for the saga '${getNewsRes[i].saga.title}'.`);
                     return parseRes;
                 })
             );
@@ -108,11 +102,78 @@ initMySQL()
 
         Promise.all(parses)
             .then((parsesRes) => {
-                const totalNewsParsed = parsesRes.reduce((a, b) => a + parseInt(b.newsParsed, 10), 0);
+                const totalNewsParsed = parsesRes.reduce((a, b) => a + parseInt(b.length, 10), 0);
                 Log.info(logTags, `A total of ${totalNewsParsed} has been parsed.`);
+                resolve(parsesRes.reduce((a, b) => a.concat(b), []));
             })
-            .catch(err => reject({ err: `Error on news parse, ${err}` }));
-    }))
+            .catch((err) => {
+                Log.err(logTags, err);
+                reject({ err: "Error on news parse" });
+            });
+    });
+}
+
+function postNews(parsedNews) {
+    return new Promise((resolve, reject) => {
+        if (process.env.DEBUG === "true") {
+            Log.info(logTags, "Running 'postNews'...");
+        }
+
+        const queryBegin = "INSERT INTO `news` (`id`, `sagaID`, `date`, `url`, `title`, `content`, `hash`) VALUES ";
+        const queryEnd = " ON DUPLICATE KEY UPDATE `hash`=`hash`;";
+        const queryList = [];
+        let query = "";
+
+        for (let i = 0; i < parsedNews.length; i++) {
+            const saga = mysql.escape(parsedNews[i].saga);
+            const hash = mysql.escape(SHA256(JSON.stringify(parsedNews[i])).toString(CryptoJS.enc.Base64));
+            const date = mysql.escape(new Date(parsedNews[i].date));
+            const link = mysql.escape(parsedNews[i].link);
+            const title = mysql.escape(parsedNews[i].title);
+            const desc = mysql.escape(parsedNews[i].description);
+            const newInsert = `(NULL, '${saga}', ${date}, ${link}, ${title}, ${desc}, ${hash})`;
+
+            if (query.length === 0) {
+                query += queryBegin;
+            }
+            else {
+                query += ", ";
+            }
+
+            if ((query.length + newInsert.length + queryEnd.length) > 4000) {
+                query = query.substring(0, query.length - 2); // remove last comma
+                query += queryEnd;
+                queryList.push(query);
+                query = queryBegin + newInsert;
+            }
+            else {
+                query += newInsert;
+            }
+        }
+
+        query += queryEnd;
+        queryList.push(query);
+
+
+        for (let i = 0; i < queryList.length; i++) {
+            mysqlConnection.query(queryList[i], [], (err, rows) => {
+                if (err) {
+                    reject({ message: "Error with MySQL.", error: err });
+                }
+
+                // TODO : Handle mysql response
+                console.log(rows);
+            });
+        }
+    });
+}
+
+//////////
+// Entry point
+initMySQL()
+    .then(getNewsURL)
+    .then(fetchNews)
+    .then(parseNews)
     .then(postNews)
     .catch((err) => {
         Log.err(logTags, "Error when setting up the service.");
