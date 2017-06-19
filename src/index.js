@@ -176,16 +176,27 @@ function postNews(parsedNews) {
 }
 
 function scheduleJob() {
-    return new Promise((resolve, reject) => {
-        schedule.scheduleJob("0 * * * *", () => {
+    return new Promise((resolve) => {
+        const job = schedule.scheduleJob("0 * * * *", () => {
             getNewsURL()
                 .then(fetchNews)
                 .then(parseNews)
                 .then(postNews)
+                .then((res) => {
+                    if (res && res.message) {
+                        Log.info(logTags, "Job success !");
+                        Log.info(logTags, res.message);
+                        Log.info(logTags, `Next job will be run the ${job.nextInvocation()}`);
+                    }
+                })
                 .catch((err) => {
-                    reject({ message: "Error in a job", err });
+                    Log.err(logTags, "Error in a job");
+                    Log.disableTimestamp();
+                    Log.err(err);
+                    Log.enableTimestamp();
                 });
         });
+        resolve(job);
     });
 }
 
@@ -193,22 +204,12 @@ function scheduleJob() {
 // Entry point
 initMySQL()
     .then(scheduleJob)
-    .then((res) => {
-        if (res.error) {
-            Log.err(logTags, res.error);
-        }
-        else {
-            Log.info(logTags, res.message);
-            Log.info(logTags, "Service successfully initialized !");
-        }
+    .then((job) => {
+        Log.info(logTags, "Service successfully initialized !");
+        Log.info(logTags, `The first run will be run the ${job.nextInvocation()}`);
     })
     .catch((err) => {
-        if (err.message) {
-            Log.err(logTags, err.message);
-        }
-        else {
-            Log.err(logTags, "Error when setting up the service.");
-        }
+        Log.err(logTags, "Error when setting up the service.");
         Log.disableTimestamp();
         Log.err(err);
         Log.enableTimestamp();
