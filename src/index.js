@@ -206,7 +206,7 @@ initMySQL()
     .then(scheduleJob)
     .then((job) => {
         Log.info(logTags, "Service successfully initialized !");
-        Log.info(logTags, `The first run will be run the ${job.nextInvocation()}`);
+        Log.info(logTags, `The first job will be run the ${job.nextInvocation()}`);
     })
     .catch((err) => {
         Log.err(logTags, "Error when setting up the service.");
