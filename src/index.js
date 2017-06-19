@@ -3,7 +3,7 @@
 import mysql from "mysql";
 import fetch from "node-fetch";
 import CryptoJS, { SHA256 } from "crypto-js";
-// import schedule from 'node-schedule';
+import schedule from "node-schedule";
 import Log from "sagasphere_logger";
 //////////
 // Custom imports
@@ -123,6 +123,7 @@ function postNews(parsedNews) {
         const queryEnd = " ON DUPLICATE KEY UPDATE `hash`=`hash`;";
         const queryList = [];
         let query = "";
+        let insertedRows = 0;
 
         for (let i = 0; i < parsedNews.length; i++) {
             const saga = mysql.escape(parsedNews[i].saga);
@@ -154,29 +155,60 @@ function postNews(parsedNews) {
         query += queryEnd;
         queryList.push(query);
 
-
-        for (let i = 0; i < queryList.length; i++) {
-            mysqlConnection.query(queryList[i], [], (err, rows) => {
+        queryList.forEach((q) => {
+            mysqlConnection.query(q, [], (err, rows) => {
                 if (err) {
                     reject({ message: "Error with MySQL.", error: err });
                 }
+                else {
+                    insertedRows += rows.affectedRows;
 
-                // TODO : Handle mysql response
-                console.log(rows);
+                    if (process.env.DEBUG === "true") {
+                        Log.info(logTags, `${rows.affectedRows} news saved.`);
+                    }
+                    if (insertedRows === parsedNews.length) {
+                        resolve({ message: `A total of ${insertedRows} has been parsed.` });
+                    }
+                }
             });
-        }
+        });
+    });
+}
+
+function scheduleJob() {
+    return new Promise((resolve, reject) => {
+        schedule.scheduleJob("0 * * * *", () => {
+            getNewsURL()
+                .then(fetchNews)
+                .then(parseNews)
+                .then(postNews)
+                .catch((err) => {
+                    reject({ message: "Error in a job", err });
+                });
+        });
     });
 }
 
 //////////
 // Entry point
 initMySQL()
-    .then(getNewsURL)
-    .then(fetchNews)
-    .then(parseNews)
-    .then(postNews)
+    .then(scheduleJob)
+    .then((res) => {
+        if (res.error) {
+            Log.err(logTags, res.error);
+        }
+        else {
+            Log.info(logTags, res.message);
+            Log.info(logTags, "Service successfully initialized !");
+        }
+    })
     .catch((err) => {
-        Log.err(logTags, "Error when setting up the service.");
+        if (err.message) {
+            Log.err(logTags, err.message);
+        }
+        else {
+            Log.err(logTags, "Error when setting up the service.");
+        }
         Log.disableTimestamp();
         Log.err(err);
         Log.enableTimestamp();
