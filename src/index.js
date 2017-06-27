@@ -15,12 +15,12 @@ const logTags = ["SagaSphere", "News"];
 // For local setup look at the README file.
 const mysqlConnection = mysql.createConnection({
     host: process.env.SAGASPHERE_MYSQL_HOST || "localhost",
+    port: process.env.SAGASPHERE_MYSQL_PORT || 3306,
     localAddress: process.env.SAGASPHERE_MYSQL_LOCALADDRESS || "localhost",
     user: process.env.SAGASPHERE_MYSQL_USER || "root",
-    password: process.env.SAGASPHERE_MYSQL_PASS || "cky_w+IQ@l",
+    password: process.env.SAGASPHERE_MYSQL_PASSWORD || "",
     database: process.env.SAGASPHERE_MYSQL_DATABASE || "sagasphere"
 });
-
 //////////
 // Function declaration
 function initMySQL() {

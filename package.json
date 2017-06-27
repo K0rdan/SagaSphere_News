@@ -10,7 +10,10 @@
     "build": "rollup -c",
     "start": "node dist/bundle.js",
     "lint:staged": "lint-staged",
-    "lint:eslint": "eslint --ignore-pattern dist ."
+    "lint:eslint": "eslint --ignore-pattern dist .",
+    "docker-build": "sh ./scripts/docker-build.sh k0rdan/sagasphere_news",
+    "docker-run": "sh ./scripts/docker-run.sh k0rdan/sagasphere_news",
+    "docker-upload": "sh ./scripts/docker-upload.sh k0rdan/sagasphere_news"
   },
   "lint-staged": {
     "*.js": "lint:eslint"
